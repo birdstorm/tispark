@@ -554,10 +554,10 @@ class BatchWriteDataTypeSuite extends BaseBatchWriteTest("test_data_type", "test
       case (writeFunc, _) =>
         jdbcUpdate(s"drop table if exists $dbtable")
         jdbcUpdate(s"""
-                      |create table $dbtable(
-                      |id varchar(10),
-                      |dt datetime
-                      |)
+             |create table $dbtable(
+             |id varchar(10),
+             |dt datetime
+             |)
       """.stripMargin)
 
         val row1 = Row("test1", Timestamp.valueOf("2020-10-10 05:12:03"))
@@ -570,7 +570,15 @@ class BatchWriteDataTypeSuite extends BaseBatchWriteTest("test_data_type", "test
           StructType(List(StructField("id", StringType), StructField("dt", TimestampType)))
 
         writeFunc(List(row1, row2, row3, row4, row5), schema, None)
-        compareTiDBSelectWithJDBC(Seq(row1, row2, row3, row4, row5), schema, sortCol = "id")
+        compareTiDBSelectWithJDBC(List(row1, row2, row3, row4, row5), schema, sortCol = "id")
     }
+  }
+
+  test("Test enum with trailing spaces") {
+    jdbcUpdate(s"create table $dbtable(a enum('a','b '))")
+
+    val schema = StructType(List(StructField("a", StringType)))
+    tidbWrite(List(Row("b")), schema, None)
+    compareTiDBSelectWithJDBC(List(Row("b ")), schema, sortCol = "a")
   }
 }
